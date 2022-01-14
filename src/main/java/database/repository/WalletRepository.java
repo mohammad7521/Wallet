@@ -16,7 +16,6 @@ public class WalletRepository {
                 "id serial primary key," +
                 "amount decimal," +
                 ")";
-
         PreparedStatement preparedStatement= ConnectionProvider.getConnection().prepareStatement(createWalletTable);
         preparedStatement.execute();
         preparedStatement.close();
@@ -24,14 +23,15 @@ public class WalletRepository {
 
 
 
-    public boolean createWallet (int amount) throws SQLException, ClassNotFoundException {
-        String createWallet="INSERT INTO WALLET(AMOUNT) VALUES (?)";
+    public int createWallet (int amount) throws SQLException, ClassNotFoundException {
+        String createWallet="INSERT INTO WALLET(AMOUNT) VALUES (?) RETURN id";
         PreparedStatement preparedStatement=ConnectionProvider.getConnection().prepareStatement(createWallet);
         preparedStatement.setDouble(1,amount);
-        int added=preparedStatement.executeUpdate();
+        ResultSet resultSet=preparedStatement.executeQuery();
+        resultSet.next();
+        int returnID=resultSet.getInt(1);
         preparedStatement.close();
-
-        return added>0;
+        return returnID;
     }
 
 
@@ -48,23 +48,25 @@ public class WalletRepository {
 
 
 
-    public double find (int id) throws SQLException, ClassNotFoundException {
-        double amount=-1;
+    public Wallet find (int id) throws SQLException, ClassNotFoundException {
+        Wallet wallet=null;
         String findWallet="SELECT * FROM WALLET WHERE id=(?)";
         PreparedStatement preparedStatement=ConnectionProvider.getConnection().prepareStatement(findWallet);
         preparedStatement.setDouble(1,id);
         ResultSet resultSet=preparedStatement.executeQuery();
+
         if (resultSet.next()) {
-            amount = resultSet.getDouble(2);
+            double amount = resultSet.getDouble(2);
+            wallet=new Wallet(id,amount);
         }
         preparedStatement.close();
-        return amount;
+        return wallet;
     }
 
 
 
 
-    public List<Wallet> showWallets() throws SQLException, ClassNotFoundException {
+    public List<Wallet> findAll() throws SQLException, ClassNotFoundException {
         String showWallets="SELECT * FROM WALLET";
         PreparedStatement preparedStatement=ConnectionProvider.getConnection().prepareStatement(showWallets);
         ResultSet resultSet=preparedStatement.executeQuery();
@@ -80,7 +82,7 @@ public class WalletRepository {
 
 
 
-    public boolean updateWallet (Wallet wallet) throws SQLException, ClassNotFoundException {
+    public boolean update (Wallet wallet) throws SQLException, ClassNotFoundException {
         String updateWallet="UPDATE WALLET SET amount=(?) WHERE id=(?)";
         PreparedStatement preparedStatement=ConnectionProvider.getConnection().prepareStatement(updateWallet);
         preparedStatement.setDouble(1,wallet.getAmount());
